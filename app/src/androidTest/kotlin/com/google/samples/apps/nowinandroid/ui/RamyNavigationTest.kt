@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 The Android Open Source Project
+ * Copyright 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,40 +50,27 @@ import com.google.samples.apps.nowinandroid.feature.foryou.R as FeatureForyouR
 import com.google.samples.apps.nowinandroid.feature.search.R as FeatureSearchR
 import com.google.samples.apps.nowinandroid.feature.settings.R as SettingsR
 
-/**
- * Tests all the navigation flows that are handled by the navigation library.
- */
 @HiltAndroidTest
-class NavigationTest {
 
-    /**
-     * Manages the components' state and is used to perform injection on your test
-     */
+//Tools Used:
+//Junit, Hilt injection, Hilt Android Rule, Compose Test Rule and APIs
+class RamyNavigationTest {
+
     @get:Rule(order = 0)
-    val hiltRule = HiltAndroidRule(this)
+    val hiltRule = HiltAndroidRule(this) // Sets up dependency injection for tests.
 
-    /**
-     * Create a temporary folder used to create a Data Store file. This guarantees that
-     * the file is removed in between each test, preventing a crash.
-     */
     @BindValue
     @get:Rule(order = 1)
-    val tmpFolder: TemporaryFolder = TemporaryFolder.builder().assureDeletion().build()
+    val tmpFolder: TemporaryFolder = TemporaryFolder.builder().assureDeletion().build() // Provides a temporary folder for file operations.
 
-    /**
-     * Grant [android.Manifest.permission.POST_NOTIFICATIONS] permission.
-     */
     @get:Rule(order = 2)
-    val postNotificationsPermission = GrantPostNotificationsPermissionRule()
+    val postNotificationsPermission = GrantPostNotificationsPermissionRule() // Grants permissions required for notifications.
 
-    /**
-     * Use the primary activity to initialize the app normally.
-     */
     @get:Rule(order = 3)
-    val composeTestRule = createAndroidComposeRule<MainActivity>()
+    val composeTestRule = createAndroidComposeRule<MainActivity>() // Sets up the Compose test environment.
 
     @Inject
-    lateinit var topicsRepository: TopicsRepository
+    lateinit var topicsRepository: TopicsRepository // Injects TopicsRepository for data access.
 
     // The strings used for matching in these tests
     private val navigateUp by composeTestRule.stringResource(FeatureForyouR.string.feature_foryou_navigate_up)
@@ -97,23 +84,25 @@ class NavigationTest {
     private val ok by composeTestRule.stringResource(SettingsR.string.feature_settings_dismiss_dialog_button_text)
 
     @Before
-    fun setup() = hiltRule.inject()
+    fun setup() = hiltRule.inject() // Inject dependencies before each test.
 
+    // Test 1: Ensures the "For You" screen is initially selected.
+    // Explanation:
+    // This test verifies that the initial screen shown to the user is "For You".
+    // It is important to confirm that the app starts with the correct screen to ensure a smooth user experience.
+    // This test follows the pattern of verifying initial screen states to ensure the navigation setup is correct.
     @Test
     fun firstScreen_isForYou() {
         composeTestRule.apply {
-            // VERIFY for you is selected
-            onNodeWithText(forYou).assertIsSelected()
+            onNodeWithText(forYou).assertIsSelected() // Assert that "For You" is selected.
         }
     }
 
-    // TODO: implement tests related to navigation & resetting of destinations (b/213307564)
-    // Restoring content should be tested with another tab than the For You one, as that will
-    // still succeed even when restoring state is turned off.
-    /**
-     * When navigating between the different top level destinations, we should restore the state
-     * of previously visited destinations.
-     */
+    // Test 2: Verifies that navigating away and back restores the content of the "For You" tab.
+    // Explanation:
+    // This test ensures that if a user navigates away from the "For You" tab and then returns, the state of "For You" is restored.
+    // This is crucial for maintaining user context and ensuring that the UI accurately reflects previous interactions.
+    // The pattern used here validates state restoration across navigation.
     @Test
     fun navigationBar_navigateToPreviouslySelectedTab_restoresContent() {
         composeTestRule.apply {
@@ -128,9 +117,11 @@ class NavigationTest {
         }
     }
 
-    /**
-     * When reselecting a tab, it should show that tab's start destination and restore its state.
-     */
+    // Test 3: Ensures reelecting a tab keeps its state.
+    // Explanation:
+    // This test verifies that reelecting the "For You" tab retains its state.
+    // This is important to ensure that user interactions do not unexpectedly reset or change the state of the selected tab.
+    // The pattern used here ensures consistency of UI state when navigating between tabs.
     @Test
     fun navigationBar_reselectTab_keepsState() {
         composeTestRule.apply {
@@ -143,21 +134,15 @@ class NavigationTest {
         }
     }
 
-//    @Test
-//    fun navigationBar_reselectTab_resetsToStartDestination() {
-//        // GIVEN the user is on the Topics destination and scrolls
-//        // and navigates to the Topic Detail destination
-//        // WHEN the user taps the Topics navigation bar item
-//        // THEN the Topics destination shows in the same scrolled state
-//    }
-
-    /*
-     * Top level destinations should never show an up affordance.
-     */
+    // Test 4: Verifies that the Up arrow is not shown on top-level destinations.
+    // Explanation:
+    // This test ensures that the Up arrow (indicating back navigation) is not present on top-level screens where it shouldn't be.
+    // This is important for maintaining consistent navigation behavior and adhering to design guidelines.
+    // The pattern checks for the presence or absence of navigation elements based on the screen context.
     @Test
     fun topLevelDestinations_doNotShowUpArrow() {
         composeTestRule.apply {
-            // GIVEN the user is on any of the top level destinations, THEN the Up arrow is not shown.
+            // GIVEN the user is on any of the top-level destinations, THEN the Up arrow is not shown.
             onNodeWithContentDescription(navigateUp).assertDoesNotExist()
 
             onNodeWithText(saved).performClick()
@@ -168,15 +153,18 @@ class NavigationTest {
         }
     }
 
+    // Test 5: Ensures that the top bar displays the correct title on each top-level destination.
+    // Explanation:
+    // This test verifies that the top bar shows the expected title for each top-level destination, such as "Saved" or "Interests".
+    // This is important for user orientation and ensuring that the top bar accurately reflects the current screen context.
+    // The pattern validates UI content dynamically across different screens.
     @Test
     fun topLevelDestinations_showTopBarWithTitle() {
         composeTestRule.apply {
             // Verify that the top bar contains the app name on the first screen.
             onNodeWithText(appName).assertExists()
 
-            // Go to the saved tab, verify that the top bar contains "saved". This means
-            // we'll have 2 elements with the text "saved" on screen. One in the top bar, and
-            // one in the bottom navigation.
+            // Go to the saved tab, verify that the top bar contains "saved".
             onNodeWithText(saved).performClick()
             onAllNodesWithText(saved).assertCountEquals(2)
 
@@ -186,6 +174,11 @@ class NavigationTest {
         }
     }
 
+    // Test 6: Ensures that the settings icon is present on all top-level destinations.
+    // Explanation:
+    // This test verifies that the settings icon is visible on all major screens, allowing users to access settings from any top-level destination.
+    // This is important for ensuring consistent access to app settings.
+    // The pattern checks for the presence of UI elements across different contexts.
     @Test
     fun topLevelDestinations_showSettingsIcon() {
         composeTestRule.apply {
@@ -199,6 +192,11 @@ class NavigationTest {
         }
     }
 
+    // Test 7: Verifies that clicking the settings icon displays the settings dialog.
+    // Explanation:
+    // This test ensures that clicking on the settings icon opens the settings dialog and displays the expected settings content.
+    // This is crucial for verifying that the settings functionality works as intended and users can access settings options.
+    // The pattern tests interaction with dialogs and verifies their content.
     @Test
     fun whenSettingsIconIsClicked_settingsDialogIsShown() {
         composeTestRule.apply {
@@ -209,6 +207,11 @@ class NavigationTest {
         }
     }
 
+    // Test 8: Ensures that dismissing the settings dialog returns the user to the previous screen.
+    // Explanation:
+    // This test verifies that after closing the settings dialog, the app returns to the previously visible screen.
+    // This is important for maintaining a seamless user experience and ensuring that navigation state is preserved.
+    // The pattern checks the restoration of previous UI states after interacting with dialogs.
     @Test
     fun whenSettingsDialogDismissed_previousScreenIsDisplayed() {
         composeTestRule.apply {
@@ -222,15 +225,17 @@ class NavigationTest {
         }
     }
 
-    /*
-     * There should always be at most one instance of a top-level destination at the same time.
-     */
+    // Test 9: Verifies that pressing the back button from the home destination quits the app.
+    // Explanation:
+    // This test checks that using the system back button or gesture on the home screen terminates the app, as expected behavior.
+    // This is important for verifying that the app handles the back navigation correctly at the top level.
+    // The pattern tests system-level navigation interactions and their impact on app state.
     @Test(expected = NoActivityResumedException::class)
     fun homeDestination_back_quitsApp() {
         composeTestRule.apply {
             // GIVEN the user navigates to the Interests destination
             onNodeWithText(interests).performClick()
-            // and then navigates to the For you destination
+            // and then navigates to the For You destination
             onNodeWithText(forYou).performClick()
             // WHEN the user uses the system button/gesture to go back
             Espresso.pressBack()
@@ -238,16 +243,16 @@ class NavigationTest {
         }
     }
 
-    /*
-     * When pressing back from any top level destination except "For you", the app navigates back
-     * to the "For you" destination, no matter which destinations you visited in between.
-     */
+    // Test 10: Ensures that pressing the back button from any destination returns to the "For You" screen.
+    // Explanation:
+    // This test verifies that pressing the back button from any screen within the app returns the user to the "For You" screen.
+    // This is important for ensuring consistent and predictable navigation behavior.
+    // The pattern tests navigation behavior and verifies the destination screen.
     @Test
     fun navigationBar_backFromAnyDestination_returnsToForYou() {
         composeTestRule.apply {
             // GIVEN the user navigated to the Interests destination
             onNodeWithText(interests).performClick()
-            // TODO: Add another destination here to increase test coverage, see b/226357686.
             // WHEN the user uses the system button/gesture to go back,
             Espresso.pressBack()
             // THEN the app shows the For You destination
@@ -255,6 +260,11 @@ class NavigationTest {
         }
     }
 
+    // Test 11: Ensures that multiple back stack interactions in the Interests tab work as expected.
+    // Explanation:
+    // This test checks that navigating through topics and switching tabs preserves the topic state when returning to the Interests tab.
+    // This is crucial for verifying that the back stack and navigation state are properly maintained.
+    // The pattern tests dynamic data interactions and state preservation across multiple navigation.
     @Test
     fun navigationBar_multipleBackStackInterests() {
         composeTestRule.apply {

@@ -29,10 +29,12 @@ dependencies {
     implementation(libs.accompanist.permissions)
     implementation(projects.core.data)
     implementation(projects.core.domain)
+    implementation(libs.androidx.espresso.core)
 
     testImplementation(libs.hilt.android.testing)
     testImplementation(libs.robolectric)
     testImplementation(projects.core.testing)
+    androidTestImplementation(project(":app"))
     testDemoImplementation(projects.core.screenshotTesting)
 
     androidTestImplementation(libs.bundles.androidx.compose.ui.test)

@@ -53,31 +53,34 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-/**
- * To learn more about how this test handles Flows created with stateIn, see
- * https://developer.android.com/kotlin/flow/test#statein
- */
+//Tools Used:
+//Junit, Kotlin Coroutines Testing, Mocking and Testing Frameworks
+
 class RamyForYouViewModelTest {
     @get:Rule
-    val mainDispatcherRule = MainDispatcherRule()
+    val mainDispatcherRule =
+        MainDispatcherRule() // Sets up a rule to handle the coroutine dispatcher for tests.
 
-    private val syncManager = TestSyncManager()
-    private val analyticsHelper = TestAnalyticsHelper()
-    private val userDataRepository = TestUserDataRepository()
-    private val topicsRepository = TestTopicsRepository()
-    private val newsRepository = TestNewsRepository()
+    private val syncManager = TestSyncManager() // Creates a test manager for syncing operations.
+    private val analyticsHelper = TestAnalyticsHelper() // Creates a test helper for analytics.
+    private val userDataRepository =
+        TestUserDataRepository() // Creates a test repository for user data.
+    private val topicsRepository = TestTopicsRepository() // Creates a test repository for topics.
+    private val newsRepository =
+        TestNewsRepository() // Creates a test repository for news resources.
     private val userNewsResourceRepository = CompositeUserNewsResourceRepository(
         newsRepository = newsRepository,
         userDataRepository = userDataRepository,
-    )
+    ) // Initializes a composite repository for user news resources.
 
     private val getFollowableTopicsUseCase = GetFollowableTopicsUseCase(
         topicsRepository = topicsRepository,
         userDataRepository = userDataRepository,
-    )
+    ) // Initializes the use case for fetching followable topics.
 
-    private val savedStateHandle = SavedStateHandle()
-    private lateinit var viewModel: ForYouViewModel
+    private val savedStateHandle =
+        SavedStateHandle() // Initializes the saved state handle for ViewModel.
+    private lateinit var viewModel: ForYouViewModel // ViewModel under test.
 
     @Before
     fun setup() {
@@ -88,77 +91,114 @@ class RamyForYouViewModelTest {
             userDataRepository = userDataRepository,
             userNewsResourceRepository = userNewsResourceRepository,
             getFollowableTopics = getFollowableTopicsUseCase,
-        )
+        ) // Initializes the ViewModel with necessary dependencies.
     }
 
+    // Test 1: Ensures the initial state is Loading
+    // Explanation:
+    // This test verifies that the initial state of the ViewModel is Loading.
+    // It is important to confirm that the ViewModel starts in the correct loading state before any data is loaded.
+    // It follows the pattern of validating initial ViewModel states to ensure the UI behaves correctly at the start.
     @Test
     fun stateIsInitiallyLoading() = runTest {
         assertEquals(
             Loading,
             viewModel.onboardingUiState.value,
-        )
-        assertEquals(NewsFeedUiState.Loading, viewModel.feedState.value)
+        ) // Asserts that the initial onboarding UI state is Loading.
+        assertEquals(
+            NewsFeedUiState.Loading,
+            viewModel.feedState.value
+        ) // Asserts that the initial feed state is Loading.
     }
 
+    // Test 2: Ensures the state is Loading when followed topics are being fetched
+    // Explanation:
+    // This test verifies that when the followed topics are being fetched, the UI state shows Loading.
+    // It is important to ensure that the UI reflects the loading state while data is being retrieved.
+    // It follows the pattern of validating UI behavior during data fetch operations.
     @Test
     fun stateIsLoadingWhenFollowedTopicsAreLoading() = runTest {
         val collectJob1 =
-            launch(UnconfinedTestDispatcher()) { viewModel.onboardingUiState.collect() }
-        val collectJob2 = launch(UnconfinedTestDispatcher()) { viewModel.feedState.collect() }
+            launch(UnconfinedTestDispatcher()) { viewModel.onboardingUiState.collect() } // Launches a coroutine to collect onboarding UI state.
+        val collectJob2 =
+            launch(UnconfinedTestDispatcher()) { viewModel.feedState.collect() } // Launches a coroutine to collect feed state.
 
-        topicsRepository.sendTopics(sampleTopics)
+        topicsRepository.sendTopics(sampleTopics) // Sends sample topics to the repository.
 
         assertEquals(
             Loading,
             viewModel.onboardingUiState.value,
-        )
-        assertEquals(NewsFeedUiState.Loading, viewModel.feedState.value)
+        ) // Asserts that the onboarding UI state is Loading.
+        assertEquals(
+            NewsFeedUiState.Loading,
+            viewModel.feedState.value
+        ) // Asserts that the feed state is Loading.
 
-        collectJob1.cancel()
-        collectJob2.cancel()
+        collectJob1.cancel() // Cancels the coroutine collecting onboarding UI state emissions.
+        collectJob2.cancel() // Cancels the coroutine collecting feed state emissions.
     }
 
+    // Test 3: Ensures the state is Loading when the app is syncing with no interests
+    // Explanation:
+    // This test verifies that when the app is syncing with no interests, the UI state shows Loading.
+    // It is important to ensure that the UI reflects the loading state during app synchronization.
+    // It follows the pattern of validating UI behavior during sync operations.
     @Test
     fun stateIsLoadingWhenAppIsSyncingWithNoInterests() = runTest {
-        syncManager.setSyncing(true)
+        syncManager.setSyncing(true) // Sets the sync manager to syncing state.
 
         val collectJob =
-            launch(UnconfinedTestDispatcher()) { viewModel.isSyncing.collect() }
+            launch(UnconfinedTestDispatcher()) { viewModel.isSyncing.collect() } // Launches a coroutine to collect syncing state.
 
         assertEquals(
             true,
             viewModel.isSyncing.value,
-        )
+        ) // Asserts that the syncing state is true.
 
-        collectJob.cancel()
+        collectJob.cancel() // Cancels the coroutine collecting syncing state emissions.
     }
 
+    // Test 4: Ensures the onboarding state is Loading when topics are being fetched
+    // Explanation:
+    // This test verifies that the onboarding state shows Loading when topics are being fetched.
+    // It is important to ensure that the UI reflects the correct loading state during topic retrieval.
+    // It follows the pattern of validating UI behavior during data fetch operations.
     @Test
     fun onboardingStateIsLoadingWhenTopicsAreLoading() = runTest {
         val collectJob1 =
-            launch(UnconfinedTestDispatcher()) { viewModel.onboardingUiState.collect() }
-        val collectJob2 = launch(UnconfinedTestDispatcher()) { viewModel.feedState.collect() }
+            launch(UnconfinedTestDispatcher()) { viewModel.onboardingUiState.collect() } // Launches a coroutine to collect onboarding UI state.
+        val collectJob2 =
+            launch(UnconfinedTestDispatcher()) { viewModel.feedState.collect() } // Launches a coroutine to collect feed state.
 
-        userDataRepository.setFollowedTopicIds(emptySet())
+        userDataRepository.setFollowedTopicIds(emptySet()) // Sets followed topic IDs to an empty set.
 
         assertEquals(
             Loading,
             viewModel.onboardingUiState.value,
-        )
-        assertEquals(Success(emptyList()), viewModel.feedState.value)
+        ) // Asserts that the onboarding UI state is Loading.
+        assertEquals(
+            Success(emptyList()),
+            viewModel.feedState.value
+        ) // Asserts that the feed state is Success with an empty list.
 
-        collectJob1.cancel()
-        collectJob2.cancel()
+        collectJob1.cancel() // Cancels the coroutine collecting onboarding UI state emissions.
+        collectJob2.cancel() // Cancels the coroutine collecting feed state emissions.
     }
 
+    // Test 5: Ensures the onboarding UI is shown when news resources are being fetched
+    // Explanation:
+    // This test verifies that the onboarding UI is shown while news resources are being fetched.
+    // It is important to ensure that the onboarding UI correctly displays topics for selection during news resource retrieval.
+    // It follows the pattern of validating UI behavior during multi-step data fetch operations.
     @Test
     fun onboardingIsShownWhenNewsResourcesAreLoading() = runTest {
         val collectJob1 =
-            launch(UnconfinedTestDispatcher()) { viewModel.onboardingUiState.collect() }
-        val collectJob2 = launch(UnconfinedTestDispatcher()) { viewModel.feedState.collect() }
+            launch(UnconfinedTestDispatcher()) { viewModel.onboardingUiState.collect() } // Launches a coroutine to collect onboarding UI state.
+        val collectJob2 =
+            launch(UnconfinedTestDispatcher()) { viewModel.feedState.collect() } // Launches a coroutine to collect feed state.
 
-        topicsRepository.sendTopics(sampleTopics)
-        userDataRepository.setFollowedTopicIds(emptySet())
+        topicsRepository.sendTopics(sampleTopics) // Sends sample topics to the repository.
+        userDataRepository.setFollowedTopicIds(emptySet()) // Sets followed topic IDs to an empty set.
 
         assertEquals(
             Shown(
@@ -199,27 +239,33 @@ class RamyForYouViewModelTest {
                 ),
             ),
             viewModel.onboardingUiState.value,
-        )
+        ) // Asserts that the onboarding UI state is Shown with sample topics.
         assertEquals(
             Success(
                 feed = emptyList(),
             ),
             viewModel.feedState.value,
-        )
+        ) // Asserts that the feed state is Success with an empty list.
 
-        collectJob1.cancel()
-        collectJob2.cancel()
+        collectJob1.cancel() // Cancels the coroutine collecting onboarding UI state emissions.
+        collectJob2.cancel() // Cancels the coroutine collecting feed state emissions.
     }
 
+    // Test 6: Ensures the onboarding UI is shown after loading empty followed topics
+    // Explanation:
+    // This test verifies that the onboarding UI is shown after loading topics when there are no followed topics.
+    // It is important to ensure that the onboarding UI displays topics for user selection when no topics are followed.
+    // It follows the pattern of validating UI behavior during initial data load with no user selections.
     @Test
     fun onboardingIsShownAfterLoadingEmptyFollowedTopics() = runTest {
         val collectJob1 =
-            launch(UnconfinedTestDispatcher()) { viewModel.onboardingUiState.collect() }
-        val collectJob2 = launch(UnconfinedTestDispatcher()) { viewModel.feedState.collect() }
+            launch(UnconfinedTestDispatcher()) { viewModel.onboardingUiState.collect() } // Launches a coroutine to collect onboarding UI state.
+        val collectJob2 =
+            launch(UnconfinedTestDispatcher()) { viewModel.feedState.collect() } // Launches a coroutine to collect feed state.
 
-        topicsRepository.sendTopics(sampleTopics)
-        userDataRepository.setFollowedTopicIds(emptySet())
-        newsRepository.sendNewsResources(sampleNewsResources)
+        topicsRepository.sendTopics(sampleTopics) // Sends sample topics to the repository.
+        userDataRepository.setFollowedTopicIds(emptySet()) // Sets followed topic IDs to an empty set.
+        newsRepository.sendNewsResources(sampleNewsResources) // Sends sample news resources to the repository.
 
         assertEquals(
             Shown(
@@ -260,35 +306,42 @@ class RamyForYouViewModelTest {
                 ),
             ),
             viewModel.onboardingUiState.value,
-        )
+        ) // Asserts that the onboarding UI state is Shown with sample topics.
         assertEquals(
             Success(
                 feed = emptyList(),
             ),
             viewModel.feedState.value,
-        )
+        ) // Asserts that the feed state is Success with an empty list.
 
-        collectJob1.cancel()
-        collectJob2.cancel()
+        collectJob1.cancel() // Cancels the coroutine collecting onboarding UI state emissions.
+        collectJob2.cancel() // Cancels the coroutine collecting feed state emissions.
     }
 
+    // Test 7: Ensures the onboarding UI is not shown after loading followed topics
+    // Explanation:
+    // This test verifies that the onboarding UI is not shown after loading topics when there are followed topics.
+    // It is important to ensure that the onboarding UI is hidden when the user has already followed topics.
+    // It follows the pattern of validating UI behavior during initial data load with existing user selections.
     @Test
     fun onboardingIsNotShownAfterUserDismissesOnboarding() = runTest {
         val collectJob1 =
-            launch(UnconfinedTestDispatcher()) { viewModel.onboardingUiState.collect() }
-        val collectJob2 = launch(UnconfinedTestDispatcher()) { viewModel.feedState.collect() }
+            launch(UnconfinedTestDispatcher()) { viewModel.onboardingUiState.collect() }  // Launches a coroutine to collect onboarding UI state.
+        val collectJob2 =
+            launch(UnconfinedTestDispatcher()) { viewModel.feedState.collect() } // Launches a coroutine to collect feed state.
 
-        topicsRepository.sendTopics(sampleTopics)
+        topicsRepository.sendTopics(sampleTopics) // Sends sample topics to the repository.
 
-        val followedTopicIds = setOf("0", "1")
+        val followedTopicIds =
+            setOf("0", "1") // Sets followed topic IDs to a set containing "0" and "1".
         val userData = emptyUserData.copy(followedTopics = followedTopicIds)
-        userDataRepository.setUserData(userData)
+        userDataRepository.setUserData(userData) // Sends user data resources to the repository.
         viewModel.dismissOnboarding()
 
         assertEquals(
             NotShown,
             viewModel.onboardingUiState.value,
-        )
+        ) // Asserts that the onboarding UI state is Hidden.
         assertEquals(NewsFeedUiState.Loading, viewModel.feedState.value)
 
         newsRepository.sendNewsResources(sampleNewsResources)
@@ -302,78 +355,125 @@ class RamyForYouViewModelTest {
                 feed = sampleNewsResources.mapToUserNewsResources(userData),
             ),
             viewModel.feedState.value,
-        )
+        ) // Asserts that the feed state is Success with sample news resources.
 
-        collectJob1.cancel()
-        collectJob2.cancel()
+        collectJob1.cancel() // Cancels the coroutine collecting onboarding UI state emissions.
+        collectJob2.cancel() // Cancels the coroutine collecting feed state emissions.
     }
 
+    // Test 8: Ensures the topic selection updates after selecting a topic
+    // Importance:
+    // This test ensures that when a topic is selected, it is properly reflected in the onboarding UI and the news feed is updated accordingly.
+    // It validates that user actions (selecting a topic) correctly influence the UI and data shown, which is crucial for a responsive and user-friendly application.
+    // Coroutine handling to simulate asynchronous data flow and validate UI changes in response to user actions.
     @Test
     fun topicSelectionUpdatesAfterSelectingTopic() = runTest {
         val collectJob1 =
             launch(UnconfinedTestDispatcher()) { viewModel.onboardingUiState.collect() }
+        // Collects onboarding UI state asynchronously to monitor updates.
+
         val collectJob2 = launch(UnconfinedTestDispatcher()) { viewModel.feedState.collect() }
+        // Collects feed state asynchronously to monitor updates.
 
         topicsRepository.sendTopics(sampleTopics)
+        // Sends sample topics to simulate the initial topic data.
+
         userDataRepository.setFollowedTopicIds(emptySet())
+        // Simulates a user with no followed topics initially.
+
         newsRepository.sendNewsResources(sampleNewsResources)
+        // Sends sample news resources to simulate the initial news feed.
 
         assertEquals(
             Shown(
                 topics = sampleTopics.map {
                     FollowableTopic(it, false)
+                    // Verifies that all topics are shown as not followed initially.
                 },
             ),
             viewModel.onboardingUiState.value,
+            // Asserts that the onboarding UI correctly displays all topics as not followed.
         )
+
         assertEquals(
             Success(
                 feed = emptyList(),
+                // Ensures the feed is empty initially since no topics are followed.
             ),
             viewModel.feedState.value,
         )
 
         val followedTopicId = sampleTopics[1].id
+        // Simulates selecting the second topic from the sample topics.
+
         viewModel.updateTopicSelection(followedTopicId, isChecked = true)
+        // Updates the topic selection to follow the selected topic.
 
         assertEquals(
             Shown(
                 topics = sampleTopics.map {
                     FollowableTopic(it, it.id == followedTopicId)
+                    // Verifies that the selected topic is marked as followed.
                 },
             ),
             viewModel.onboardingUiState.value,
+            // Asserts that the onboarding UI correctly reflects the updated selection state.
         )
 
         val userData = emptyUserData.copy(followedTopics = setOf(followedTopicId))
+        // Creates user data with the followed topic ID.
 
         assertEquals(
             Success(
                 feed = listOf(
                     UserNewsResource(sampleNewsResources[1], userData),
                     UserNewsResource(sampleNewsResources[2], userData),
+                    // Ensures the feed state displays news resources related to the followed topic.
                 ),
             ),
             viewModel.feedState.value,
         )
 
         collectJob1.cancel()
+        // Cancels the coroutine collecting onboarding UI state emissions.
+
         collectJob2.cancel()
+        // Cancels the coroutine collecting feed state emissions.
     }
+
+    // Test 9: Ensures the topic selection updates after unselecting topic
+    // Importance:
+    // This test ensures that unselecting a topic correctly updates the onboarding UI and clears the news feed
+    // It verifies that the UI accurately reflects the unselected state and that no stale data is shown.
+    // Ensures all asynchronous operations are completed, providing a reliable state for assertions.
 
     @Test
     fun topicSelectionUpdatesAfterUnselectingTopic() = runTest {
         val collectJob1 =
             launch(UnconfinedTestDispatcher()) { viewModel.onboardingUiState.collect() }
+        // Collects onboarding UI state asynchronously.
+
         val collectJob2 = launch(UnconfinedTestDispatcher()) { viewModel.feedState.collect() }
+        // Collects feed state asynchronously.
 
         topicsRepository.sendTopics(sampleTopics)
+        // Sends sample topics to simulate the initial topic data.
+
         userDataRepository.setFollowedTopicIds(emptySet())
+        // Simulates a user with no followed topics initially.
+
         newsRepository.sendNewsResources(sampleNewsResources)
+        // Sends sample news resources to simulate the initial news feed.
+
         viewModel.updateTopicSelection("1", isChecked = true)
+        // Simulates selecting a topic.
+
         viewModel.updateTopicSelection("1", isChecked = false)
+        // Simulates unselecting the topic.
 
         advanceUntilIdle()
+        // Ensures all state updates are processed.
+
         assertEquals(
             Shown(
                 topics = listOf(
@@ -413,47 +513,73 @@ class RamyForYouViewModelTest {
                 ),
             ),
             viewModel.onboardingUiState.value,
+            // Asserts that the onboarding UI correctly reflects no topics followed after un-selection.
         )
         assertEquals(
             Success(
                 feed = emptyList(),
+                // Ensures the feed is empty after unselecting the topic.
             ),
             viewModel.feedState.value,
         )
 
         collectJob1.cancel()
+        // Cancels the coroutine collecting onboarding UI state emissions.
+
         collectJob2.cancel()
+        // Cancels the coroutine collecting feed state emissions.
     }
 
+    // Test 10: Ensures news resources selection updates after loading followed topic
+    // Explanation:
+    // This test ensures that the feed state and onboarding UI reflect the changes after followed topics are loaded and news resources are updated.
+    // It verifies that the UI and data reflect user preferences and updates correctly, which is critical for user satisfaction.
+    // Uses a combination of data loading and state updates to validate end-to-end functionality, ensuring that followed topics and saved resources are handled properly.
     @Test
     fun newsResourceSelectionUpdatesAfterLoadingFollowedTopics() = runTest {
         val collectJob1 =
             launch(UnconfinedTestDispatcher()) { viewModel.onboardingUiState.collect() }
+        // Collects onboarding UI state asynchronously.
+
         val collectJob2 = launch(UnconfinedTestDispatcher()) { viewModel.feedState.collect() }
+        // Collects feed state asynchronously.
 
         val followedTopicIds = setOf("1")
+        // Defines followed topic IDs.
+
         val userData = emptyUserData.copy(
             followedTopics = followedTopicIds,
             shouldHideOnboarding = true,
         )
+        // Creates user data with followed topics and hides onboarding.
 
         topicsRepository.sendTopics(sampleTopics)
+        // Sends sample topics to the repository.
+
         userDataRepository.setUserData(userData)
+        // Sets user data in the repository.
+
         newsRepository.sendNewsResources(sampleNewsResources)
+        // Sends sample news resources to the repository.
 
         val bookmarkedNewsResourceId = "2"
+        // Defines the ID of a news resource to be bookmarked.
+
         viewModel.updateNewsResourceSaved(
             newsResourceId = bookmarkedNewsResourceId,
             isChecked = true,
         )
+        // Updates the news resource selection to save the bookmarked resource.
 
         val userDataExpected = userData.copy(
             bookmarkedNewsResources = setOf(bookmarkedNewsResourceId),
         )
+        // Updates user data to include the bookmarked news resource.
 
         assertEquals(
             NotShown,
             viewModel.onboardingUiState.value,
+            // Ensures the onboarding UI state is hidden after loading followed topics.
         )
         assertEquals(
             Success(
@@ -463,20 +589,35 @@ class RamyForYouViewModelTest {
                 ),
             ),
             viewModel.feedState.value,
+            // Asserts that the feed state displays news resources related to followed topics and bookmarked resources.
         )
 
         collectJob1.cancel()
+        // Cancels the coroutine collecting onboarding UI state emissions.
+
         collectJob2.cancel()
+        // Cancels the coroutine collecting feed state emissions.
     }
 
+    // Test 11: Ensures dep linked news resources is fetched and reset after viewing
+    // Importance:
+    // This test ensures that deep-linked news resources are correctly fetched and then reset after being viewed.
+    // It verifies that the deep-link functionality works as expected, providing a smooth user experience when navigating through links.
+    // Combines deep-link handling with state verification and analytics logging, ensuring end-to-end functionality and proper tracking of user interactions.
     @Test
     fun deepLinkedNewsResourceIsFetchedAndResetAfterViewing() = runTest {
         val collectJob =
             launch(UnconfinedTestDispatcher()) { viewModel.deepLinkedNewsResource.collect() }
+        // Collects deep-linked news resource state asynchronously.
 
         newsRepository.sendNewsResources(sampleNewsResources)
+        // Sends sample news resources to the repository.
+
         userDataRepository.setUserData(emptyUserData)
+        // Sets user data in the repository.
+
         savedStateHandle[LINKED_NEWS_RESOURCE_ID] = sampleNewsResources.first().id
+        // Sets a deep-linked news resource ID in the saved state handle.
 
         assertEquals(
             expected = UserNewsResource(
@@ -485,14 +626,17 @@ class RamyForYouViewModelTest {
             ),
             actual = viewModel.deepLinkedNewsResource.value,
         )
+        // Asserts that the deep-linked news resource is fetched correctly.
 
         viewModel.onDeepLinkOpened(
             newsResourceId = sampleNewsResources.first().id,
         )
+        // Simulates the user opening the deep-linked news resource.
 
         assertNull(
             viewModel.deepLinkedNewsResource.value,
         )
+        // Asserts that the deep-linked news resource state is reset after viewing.
 
         assertTrue(
             analyticsHelper.hasLogged(
@@ -507,26 +651,39 @@ class RamyForYouViewModelTest {
                 ),
             ),
         )
+        // Verifies that the analytics event for deep-link opening is logged correctly.
 
         collectJob.cancel()
+        // Cancels the coroutine collecting deep-linked news resource state emissions.
     }
 
+    // Test 12: Ensures bookmark state is updated when news resource is called
+    // Importance:
+    // This test ensures that the bookmark state of a news resource is updated correctly when the resource is saved or removed from bookmarks.
+    // It validates that the bookmark functionality works as intended, allowing users to save and remove news resources as needed.
+    // Tests the update mechanism directly by asserting changes in the user data repository, ensuring accurate state management.
     @Test
     fun whenUpdateNewsResourceSavedIsCalled_bookmarkStateIsUpdated() = runTest {
         val newsResourceId = "123"
+        // Defines the ID of the news resource to be updated.
+
         viewModel.updateNewsResourceSaved(newsResourceId, true)
+        // Marks the news resource as saved (bookmarked).
 
         assertEquals(
             expected = setOf(newsResourceId),
             actual = userDataRepository.userData.first().bookmarkedNewsResources,
         )
+        // Asserts that the bookmarked news resources include the updated resource ID.
 
         viewModel.updateNewsResourceSaved(newsResourceId, false)
+        // Unmarks the news resource (removes from bookmarks).
 
         assertEquals(
             expected = emptySet(),
             actual = userDataRepository.userData.first().bookmarkedNewsResources,
         )
+        // Asserts that the bookmarked news resources are empty after unmarking.
     }
 }
 private val sampleTopics = listOf(
@@ -564,8 +721,8 @@ private val sampleNewsResources = listOf(
             "Android Developers YouTube channel has to offer. During the Android Developer " +
             "Summit, our YouTube channel reached 1 million subscribers! Here’s a small video to " +
             "thank you all.",
-        url = "https://youtu.be/-fJ6poHQrjM",
-        headerImageUrl = "https://i.ytimg.com/vi/-fJ6poHQrjM/maxresdefault.jpg",
+        url = "https://www.youtube.com/watch?v=PFdiTzd6CbI",
+        headerImageUrl = "https://img.youtube.com/vi/PFdiTzd6CbI/maxresdefault.jpg",
         publishDate = Instant.parse("2021-11-09T00:00:00.000Z"),
         type = "Video 📺",
         topics = listOf(
